@@ -5,7 +5,8 @@
   "license": "MIT",
   "repository": "bezoerb/text-metrics",
   "authors": [
-    "Ben Zörb <ben@sommerlaune.com> (https://github.com/bezoerb)"
+    "Ben Zörb <ben@sommerlaune.com> (https://github.com/bezoerb)",
+    "Athaariq Ardhiansyah <athaariqa@gmail.com> (https://github.com/Thor-x86)"
   ],
   "engines": {
     "node": ">= 10"
@@ -30,6 +31,7 @@
     "src"
   ],
   "main": "dist/text-metrics.js",
+  "types": "dist/index.d.ts",
   "umd:main": "dist/text-metrics.umd.js",
   "unpkg": "dist/text-metrics.umd.js",
   "module": "dist/text-metrics.module.js",

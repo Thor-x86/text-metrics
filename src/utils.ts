@@ -4,18 +4,22 @@
  BB	Break Before	Punctuation used in dictionaries	Generally provide a line break opportunity before the character
  HY	Hyphen	HYPHEN-MINUS	Provide a line break opportunity after the character, except in numeric context
  CB	Contingent Break Opportunity	Inline objects	Provide a line break opportunity contingent on additional information
- */
+**/
+
+import ComputeLinesParams from './definitions/compute-lines-params';
+import TextMetricsOptions from './definitions/options';
+import Breakpoint from './definitions/breakpoint';
 
 // B2 Break Opportunity Before and After - http://www.unicode.org/reports/tr14/#B2
-const B2 = new Set(['\u2014']);
+const B2: Set<string> = new Set(['\u2014']);
 
-const SHY = new Set([
+const SHY: Set<string> = new Set([
   // Soft hyphen
   '\u00AD',
 ]);
 
 // BA: Break After (remove on break) - http://www.unicode.org/reports/tr14/#BA
-const BAI = new Set([
+const BAI: Set<string> = new Set([
   // Spaces
   '\u0020',
   '\u1680',
@@ -40,7 +44,7 @@ const BAI = new Set([
   '\u2029',
 ]);
 
-const BA = new Set([
+const BA: Set<string> = new Set([
   // Hyphen
   '\u058A',
   '\u2010',
@@ -81,10 +85,10 @@ const BA = new Set([
 ]);
 
 // BB: Break Before - http://www.unicode.org/reports/tr14/#BB
-const BB = new Set(['\u00B4', '\u1FFD']);
+const BB: Set<string> = new Set(['\u00B4', '\u1FFD']);
 
 // BK: Mandatory Break (A) (Non-tailorable) - http://www.unicode.org/reports/tr14/#BK
-const BK = new Set(['\u000A']);
+const BK: Set<string> = new Set(['\u000A']);
 
 /* eslint-env es6, browser */
 const DEFAULTS = {
@@ -95,19 +99,16 @@ const DEFAULTS = {
 
 /**
  * We only support rem/em/pt conversion
- * @param val
- * @param options
- * @return {*}
  */
-function pxValue(value_, options) {
+function pxValue(value_: string, options?: TextMetricsOptions): number {
   if (!options) {
-    options = {};
+    options = {multiline: false};
   }
 
   const baseFontSize = Number.parseInt(prop(options, 'base-font-size', 16), 10);
 
   const value = Number.parseFloat(value_);
-  const unit = value_.replace(value, '');
+  const unit = value_.replace(value.toString(), '');
   // eslint-disable-next-line default-case
   switch (unit) {
     case 'rem':
@@ -124,11 +125,8 @@ function pxValue(value_, options) {
 
 /**
  * Get computed word- and letter spacing for text
- * @param ws
- * @param ls
- * @return {function(*)}
  */
-export function addWordAndLetterSpacing(ws, ls) {
+export function addWordAndLetterSpacing(ws: string, ls: string): (text: string) => number {
   const blacklist = new Set(['inherit', 'initial', 'unset', 'normal']);
 
   let wordAddon = 0;
@@ -141,7 +139,7 @@ export function addWordAndLetterSpacing(ws, ls) {
     letterAddon = pxValue(ls);
   }
 
-  return (text) => {
+  return (text: string): number => {
     const words = text.trim().replace(/\s+/gi, ' ').split(' ').length - 1;
     const chars = text.length;
 
@@ -154,13 +152,9 @@ export function addWordAndLetterSpacing(ws, ls) {
  *
  * font: font-style font-variant font-weight font-size/line-height font-family;
  * http://www.w3schools.com/tags/canvas_font.asp
- *
- * @param {CSSStyleDeclaration} style
- * @param {object} options
- * @returns {string}
  */
-export function getFont(style, options) {
-  const font = [];
+export function getFont(style: CSSStyleDeclaration, options: TextMetricsOptions): string {
+  const font: string[] = [];
 
   const fontWeight = prop(options, 'font-weight', style.getPropertyValue('font-weight')) || DEFAULTS['font-weight'];
   if (
@@ -183,7 +177,7 @@ export function getFont(style, options) {
 
   const fontSize = prop(options, 'font-size', style.getPropertyValue('font-size')) || DEFAULTS['font-size'];
   const fontSizeValue = pxValue(fontSize);
-  font.push(fontSizeValue + 'px');
+  font.push(fontSizeValue.toString() + 'px');
 
   const fontFamily = prop(options, 'font-family', style.getPropertyValue('font-family')) || DEFAULTS['font-family'];
   font.push(fontFamily);
@@ -193,21 +187,15 @@ export function getFont(style, options) {
 
 /**
  * Check for CSSStyleDeclaration
- *
- * @param val
- * @returns {bool}
  */
-export function isCSSStyleDeclaration(value) {
+export function isCSSStyleDeclaration(value: any): boolean {
   return value && typeof value.getPropertyValue === 'function';
 }
 
 /**
  * Check wether we can get computed style
- *
- * @param el
- * @returns {bool}
  */
-export function canGetComputedStyle(element) {
+export function canGetComputedStyle(element: HTMLElement): boolean {
   return (
     isElement(element) &&
     element.style &&
@@ -218,11 +206,8 @@ export function canGetComputedStyle(element) {
 
 /**
  * Check for DOM element
- *
- * @param el
- * @retutns {bool}
  */
-export function isElement(element) {
+export function isElement(element: HTMLElement): boolean {
   return typeof HTMLElement === 'object'
     ? element instanceof HTMLElement
     : Boolean(
@@ -236,21 +221,17 @@ export function isElement(element) {
 
 /**
  * Check if argument is object
- * @param obj
- * @returns {boolean}
  */
-export function isObject(object) {
+export function isObject(object: any): boolean {
   return typeof object === 'object' && object !== null && !Array.isArray(object);
 }
 
 /**
  * Get style declaration if available
- *
- * @returns {CSSStyleDeclaration}
  */
-export function getStyle(element, options) {
+export function getStyle(element: HTMLElement, options: TextMetricsOptions): CSSStyleDeclaration {
   const options_ = {...(options || {})};
-  const {style} = options_;
+  const {style} = options_ as HTMLElement;
   if (!options) {
     options = {};
   }
@@ -263,20 +244,19 @@ export function getStyle(element, options) {
     return window.getComputedStyle(element, prop(options, 'pseudoElt', null));
   }
 
-  return {
-    getPropertyValue: (key) => prop(options, key),
-  };
+  const result: CSSStyleDeclaration = new CSSStyleDeclaration();
+  result.getPropertyValue = (key) => prop(options, key);
+
+  return result;
 }
 
 /**
  * Normalize whitespace
  * https://developer.mozilla.org/de/docs/Web/CSS/white-space
  *
- * @param {string} text
  * @param {string} ws whitespace value
- * @returns {string}
  */
-export function normalizeWhitespace(text, ws) {
+export function normalizeWhitespace(text: string, ws?: string): string {
   switch (ws) {
     case 'pre':
       return text;
@@ -294,12 +274,8 @@ export function normalizeWhitespace(text, ws) {
 
 /**
  * Get styled text
- *
- * @param {string} text
- * @param {CSSStyleDeclaration} style
- * @returns {string}
  */
-export function getStyledText(text, style) {
+export function getStyledText(text: string, style: CSSStyleDeclaration): string {
   switch (style.getPropertyValue('text-transform')) {
     case 'uppercase':
       return text.toUpperCase();
@@ -313,10 +289,8 @@ export function getStyledText(text, style) {
 /**
  * Trim text and repace some breaking htmlentities for convenience
  * Point user to https://mths.be/he for real htmlentity decode
- * @param text
- * @returns {string}
  */
-export function prepareText(text) {
+export function prepareText(text: string): string {
   // Convert to unicode
   text = (text || '')
     .replace(/<wbr>/gi, '\u200B')
@@ -336,9 +310,8 @@ export function prepareText(text) {
 /**
  * Get textcontent from element
  * Try innerText first
- * @param el
  */
-export function getText(element) {
+export function getText(element: HTMLElement): string {
   if (!element) {
     return '';
   }
@@ -350,23 +323,15 @@ export function getText(element) {
 
 /**
  * Get property from src
- *
- * @param src
- * @param attr
- * @param defaultValue
- * @returns {*}
  */
-export function prop(src, attr, defaultValue) {
+export function prop(src: any, attr: string, defaultValue?: any): any {
   return (src && typeof src[attr] !== 'undefined' && src[attr]) || defaultValue;
 }
 
 /**
  * Normalize options
- *
- * @param options
- * @returns {*}
  */
-export function normalizeOptions(options) {
+export function normalizeOptions(options: TextMetricsOptions): TextMetricsOptions {
   const options_ = {};
 
   // Normalize keys (fontSize => font-size)
@@ -380,36 +345,27 @@ export function normalizeOptions(options) {
 
 /**
  * Get Canvas
- * @param font
+ *
  * @throws {Error}
- * @return {Context2d}
  */
-export function getContext2d(font) {
+export function getContext2d(font: string): CanvasRenderingContext2D {
   try {
     const ctx = document.createElement('canvas').getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    const bsr =
-      ctx.webkitBackingStorePixelRatio ||
-      ctx.mozBackingStorePixelRatio ||
-      ctx.msBackingStorePixelRatio ||
-      ctx.oBackingStorePixelRatio ||
-      ctx.backingStorePixelRatio ||
-      1;
     ctx.font = font;
-    ctx.setTransform(dpr / bsr, 0, 0, dpr / bsr, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     return ctx;
   } catch (error) {
-    throw new Error('Canvas support required' + error.message);
+    const typedError: Error = error;
+    throw new Error('Canvas support required\n' + typedError.message);
   }
 }
 
 /**
  * Check breaking character
  * http://www.unicode.org/reports/tr14/#Table1
- *
- * @param chr
  */
-function checkBreak(chr) {
+function checkBreak(chr: string): string {
   return (
     (B2.has(chr) && 'B2') ||
     (BAI.has(chr) && 'BAI') ||
@@ -420,20 +376,20 @@ function checkBreak(chr) {
   );
 }
 
-export function computeLinesDefault({ctx, text, max, wordSpacing, letterSpacing}) {
-  const addSpacing = addWordAndLetterSpacing(wordSpacing, letterSpacing);
-  const lines = [];
-  const parts = [];
-  const breakpoints = [];
+export function computeLinesDefault(parameters: ComputeLinesParams): string[] {
+  const addSpacing = addWordAndLetterSpacing(parameters.wordSpacing, parameters.letterSpacing);
+  const lines: string[] = [];
+  const parts: string[] = [];
+  const breakpoints: Breakpoint[] = [];
   let line = '';
   let part = '';
 
-  if (!text) {
+  if (!parameters.text) {
     return [];
   }
 
   // Compute array of breakpoints
-  for (const chr of text) {
+  for (const chr of parameters.text) {
     const type = checkBreak(chr);
     if (part === '' && type === 'BAI') {
       continue;
@@ -475,11 +431,11 @@ export function computeLinesDefault({ctx, text, max, wordSpacing, letterSpacing}
     }
 
     // Measure width
-    const rawWidth = ctx.measureText(line + chr + part).width + addSpacing(line + chr + part);
-    const width = Math.round(rawWidth, 10);
+    const rawWidth = parameters.ctx.measureText(line + chr + part).width + addSpacing(line + chr + part);
+    const width = Math.round(rawWidth);
 
     // Still fits in line
-    if (width <= max) {
+    if (width <= parameters.max) {
       line += chr + part;
       continue;
     }
@@ -503,10 +459,10 @@ export function computeLinesDefault({ctx, text, max, wordSpacing, letterSpacing}
         line = chr + part;
         break;
       case 'B2':
-        if (Number.parseInt(ctx.measureText(line + chr).width + addSpacing(line + chr), 10) <= max) {
+        if (parameters.ctx.measureText(line + chr).width + addSpacing(line + chr) <= parameters.max) {
           lines.push(line + chr);
           line = part;
-        } else if (Number.parseInt(ctx.measureText(chr + part).width + addSpacing(chr + part), 10) <= max) {
+        } else if (parameters.ctx.measureText(chr + part).width + addSpacing(chr + part) <= parameters.max) {
           lines.push(line);
           line = chr + part;
         } else {
@@ -521,24 +477,24 @@ export function computeLinesDefault({ctx, text, max, wordSpacing, letterSpacing}
     }
   }
 
-  if ([...line].length !== 0) {
+  if (line.split('').length !== 0) {
     lines.push(line);
   }
 
   return lines;
 }
 
-export function computeLinesBreakAll({ctx, text, max, wordSpacing, letterSpacing}) {
-  const addSpacing = addWordAndLetterSpacing(wordSpacing, letterSpacing);
-  const lines = [];
+export function computeLinesBreakAll(parameters: ComputeLinesParams): string[] {
+  const addSpacing = addWordAndLetterSpacing(parameters.wordSpacing, parameters.letterSpacing);
+  const lines: string[] = [];
   let line = '';
   let index = 0;
 
-  if (!text) {
+  if (!parameters.text) {
     return [];
   }
 
-  for (const chr of text) {
+  for (const chr of parameters.text) {
     const type = checkBreak(chr);
     // Mandatory break found (br's converted to \u000A and innerText keeps br's as \u000A
     if (type === 'BK') {
@@ -553,18 +509,18 @@ export function computeLinesBreakAll({ctx, text, max, wordSpacing, letterSpacing
     }
 
     // Measure width
-    let rawWidth = ctx.measureText(line + chr).width + addSpacing(line + chr);
+    let rawWidth = parameters.ctx.measureText(line + chr).width + addSpacing(line + chr);
     let width = Math.ceil(rawWidth);
 
     // Check if we can put char behind the shy
     if (type === 'SHY') {
-      const next = text[index + 1] || '';
-      rawWidth = ctx.measureText(line + chr + next).width + addSpacing(line + chr + next);
+      const next = parameters.text[index + 1] || '';
+      rawWidth = parameters.ctx.measureText(line + chr + next).width + addSpacing(line + chr + next);
       width = Math.ceil(rawWidth);
     }
 
     // Needs at least one character
-    if (width > max && [...line].length !== 0) {
+    if (width > parameters.max && line.split('').length !== 0) {
       switch (type) {
         case 'SHY':
           lines.push(line + '-');
@@ -590,7 +546,7 @@ export function computeLinesBreakAll({ctx, text, max, wordSpacing, letterSpacing
     index++;
   }
 
-  if ([...line].length !== 0) {
+  if (line.split('').length !== 0) {
     lines.push(line);
   }
 
