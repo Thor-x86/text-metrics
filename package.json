@@ -27,8 +27,8 @@
     "coveralls": "cat ./coverage/lcov.info | coveralls"
   },
   "files": [
-    "dist",
-    "src"
+    "dist/text-metrics.js",
+    "dist/index.d.ts"
   ],
   "main": "dist/text-metrics.js",
   "types": "dist/index.d.ts",
@@ -110,7 +110,7 @@
     {
       "basePath": "/dist/",
       "files": [
-        "*.js"
+        "*.js", "*.d.ts"
       ]
     }
   ],
